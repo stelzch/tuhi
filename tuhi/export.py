@@ -77,7 +77,7 @@ class ImageExportBase(GObject.Object):
         return strokes
 
 
-class JsonSvg(ImageExportBase):
+class JsonLegacySvg(ImageExportBase):
 
     _output_scaling_factor = 1000
     _base_pen_width = 0.4
@@ -110,6 +110,32 @@ class JsonSvg(ImageExportBase):
         svg.add(g)
         svg.save()
 
+class JsonSvg(ImageExportBase):
+
+    _output_scaling_factor = 1000
+    _base_pen_width = 0.4
+    _pen_pressure_width_factor = 0.2
+
+    def _convert(self):
+        if os.path.isfile(self.filename):
+            return
+
+        width, height = self.output_dimensions
+        size = width, height
+        svg = svgwrite.Drawing(filename=self.filename, size=size)
+
+        #g = svgwrite.container.Group(id='layer0')
+        for sk_num, stroke_points in enumerate(self.output_strokes):
+            points = list(map(lambda point: (point[0], point[1]), stroke_points)) # Discard pressure value
+            polyline = svg.polyline(points,
+                                    stroke='black',
+                                    stroke_width=0.3,
+                                    stroke_linecap='round',
+                                    stroke_linejoin='round',
+                                    fill='none')
+            svg.add(polyline)
+
+        svg.save()
 
 class JsonPng(ImageExportBase):
 
