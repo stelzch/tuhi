@@ -35,6 +35,7 @@ class Flowbox(Gtk.Box):
         super().__init__(*args, **kwargs)
         self.time = timestruct
         self.label_date.set_text(time.strftime('%B %Y', self.time))
+        self.flowbox_drawings.connect("selected-children-changed", self.on_select)
 
     def insert(self, drawing):
         # We don't know which order we get drawings from the device, so
@@ -54,6 +55,9 @@ class Flowbox(Gtk.Box):
             if child.get_child() == drawing:
                 self.flowbox_drawings.remove(child)
         self.flowbox_drawings.foreach(delete_matching_child, drawing)
+
+    def on_select(self, bbox):
+        print("Selected: ", self.flowbox_drawings.get_selected_children(), bbox)
 
     @GObject.Property
     def is_empty(self):

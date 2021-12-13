@@ -16,6 +16,7 @@ import svgwrite
 import os
 from svgwrite import mm
 import cairo
+import gzip
 
 
 class ImageExportBase(GObject.Object):
@@ -170,3 +171,40 @@ class JsonPng(ImageExportBase):
             ctx.stroke()
 
         surface.write_to_png(self.filename)
+
+class JsonXournalpp(ImageExportBase):
+    _millimeter_to_point = 2.8346456693
+    _output_scaling_factor = 1000 / _millimeter_to_point
+    _base_pen_width = 0.4
+    _pen_pressure_width_factor = 0.2
+
+    _header_template = """<?xml version="1.0" standalone="no"?>
+<xournal creator="Tuhi" fileversion="4">
+<title>{title}</title>
+<page width="{width}" height="{height}">
+<background type="solid" color="#ffffffff" style="plain" />
+<layer>
+"""
+
+    _footer_template = "</layer></page></xournal>"
+    _stroke_template = """<stroke tool="pen" ts="0ll" fn="" color="#000000" width="{width_list}">{coord_list}</stroke>"""
+
+    def _convert(self):
+        width, height = self.output_dimensions
+        encode = lambda string: bytes(string, 'UTF-8')
+
+        with gzip.open(filename=self.filename, mode="w") as file:
+            file.write(
+                    encode(
+                        self._header_template.format(
+                            title=self.json["devicename"] + " " + str(self.timestamp),
+                            width=width, height=height)))
+
+            for stroke_points in self.output_strokes:
+                width_list = " ".join(map(lambda s: str(s[2]), stroke_points))
+                coord_list = " ".join(map(lambda s: "{} {}".format(s[0], s[1]), stroke_points))
+                file.write(encode(self._stroke_template.format(width_list=width_list, coord_list=coord_list)))
+                file.write(b'\n')
+
+            file.write(encode(self._footer_template))
+

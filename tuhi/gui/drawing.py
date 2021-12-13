@@ -19,7 +19,7 @@ import json
 from pathlib import Path
 from .config import Config
 from .splitter import Splitter
-from tuhi.export import JsonSvg, JsonPng
+from tuhi.export import JsonSvg, JsonPng, JsonXournalpp
 
 import gi
 gi.require_version("Gtk", "3.0")
@@ -134,9 +134,13 @@ class Drawing(Gtk.EventBox):
         # Translators: filter to show png files only
         filter_png.set_name(_('PNG files'))
         filter_png.add_pattern('*.png')
+        # Translators: filter to show xopp files only
+        filter_xopp = Gtk.FileFilter()
+        filter_xopp.add_pattern('*.xopp')
         dialog.add_filter(filter_svg)
         dialog.add_filter(filter_png)
         dialog.add_filter(filter_any)
+        dialog.add_filter(filter_xopp)
 
         response = dialog.run()
         if response == Gtk.ResponseType.ACCEPT:
@@ -150,6 +154,9 @@ class Drawing(Gtk.EventBox):
                 # file itself.
                 self.process_png()
                 shutil.move(self.png.filename, file)
+            elif file.lower().endswith('.xopp'):
+                JsonXournalpp(self.json_data, self.orientation, file)
+
             else:
                 # regenerate the SVG based on the current rotation.
                 # where we used the orientation buttons, we haven't updated the
